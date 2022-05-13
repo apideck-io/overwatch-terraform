@@ -1,3 +1,7 @@
+data "aws_ssm_parameter" "retool_license_key" {
+  name = "/overwatch/${local.stage}/RETOOL_LICENSE_KEY"
+}
+
 module "retool" {
   source = "./modules/aws_ecs_fargate"
 
@@ -15,7 +19,7 @@ module "retool" {
   ecs_retool_image = "tryretool/backend:2.89.11"
   domain_name      = local.domain_name
 
-  retool_license_key    = "SSOP_15fc79d7-4114-4aeb-b9b5-ca1ae9b85ebe"
+  retool_license_key    = data.aws_ssm_parameter.retool_license_key.arn
   log_retention_in_days = 7
 
   environment = local.environment

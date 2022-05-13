@@ -72,7 +72,6 @@ variable "deployment_name" {
 variable "retool_license_key" {
   type        = string
   description = "Retool license key"
-  default     = "EXPIRED-LICENSE-KEY-TRIAL"
 }
 
 variable "ecs_retool_image" {

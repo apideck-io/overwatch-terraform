@@ -112,6 +112,13 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
             }
           ]
         )
+
+        secrets = [
+          {
+            "name" : "LICENSE_KEY",
+            "valueFrom" : var.retool_license_key
+          }
+        ]
       }
     ]
   )
@@ -168,6 +175,10 @@ resource "aws_ecs_task_definition" "retool" {
         )
 
         secrets = [
+          {
+            "name" : "LICENSE_KEY",
+            "valueFrom" : var.retool_license_key
+          },
           {
             "name" : "CUSTOM_OAUTH2_SSO_CLIENT_SECRET",
             "valueFrom" : data.aws_ssm_parameter.google_oauth2_sso_client_secret.arn

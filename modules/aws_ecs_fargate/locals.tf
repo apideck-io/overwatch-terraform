@@ -41,10 +41,6 @@ locals {
       {
         "name" : "ENCRYPTION_KEY",
         "value" : random_string.encryption_key.result
-      },
-      {
-        "name" : "LICENSE_KEY",
-        "value" : var.retool_license_key
       }
     ]
   )

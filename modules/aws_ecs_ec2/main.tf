@@ -22,7 +22,7 @@ resource "aws_ecs_cluster" "this" {
 
 data "aws_ami" "this" {
   most_recent = true # get the latest version
-  name_regex = "^amzn2-ami-ecs-hvm-\\d\\.\\d\\.\\d{8}-x86_64-ebs$"
+  name_regex  = "^amzn2-ami-ecs-hvm-\\d\\.\\d\\.\\d{8}-x86_64-ebs$"
 
   filter {
     name = "virtualization-type"
@@ -156,9 +156,8 @@ resource "aws_db_instance" "this" {
   publicly_accessible          = var.rds_publicly_accessible
   vpc_security_group_ids       = [aws_security_group.rds.id]
   performance_insights_enabled = var.rds_performance_insights_enabled
-  
-  skip_final_snapshot          = true
-  apply_immediately           = true
+  skip_final_snapshot = true
+  apply_immediately   = true
 }
 
 resource "aws_ecs_service" "retool" {
