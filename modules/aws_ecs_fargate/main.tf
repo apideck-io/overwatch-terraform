@@ -128,8 +128,8 @@ resource "aws_ecs_task_definition" "retool" {
   task_role_arn            = aws_iam_role.task_role.arn
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   network_mode             = "awsvpc"
-  cpu                      = "1024"
-  memory                   = "2048"
+  cpu                      = "2048"
+  memory                   = "4096"
   requires_compatibilities = ["FARGATE"]
   container_definitions = jsonencode(
     [
@@ -182,7 +182,11 @@ resource "aws_ecs_task_definition" "retool" {
           {
             "name" : "CUSTOM_OAUTH2_SSO_CLIENT_SECRET",
             "valueFrom" : data.aws_ssm_parameter.google_oauth2_sso_client_secret.arn
-          }
+          },
+          {
+            "name" : "RETOOL_EXPOSED_MANAGEMENT_API_KEY",
+            "valueFrom" : var.management_api_key
+          },
         ]
       }
     ]

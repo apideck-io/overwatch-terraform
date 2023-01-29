@@ -268,3 +268,8 @@ variable "alb_egress_rules" {
   ]
   description = "Egress rules for load balancer"
 }
+
+variable "management_api_key" {
+  type        = string
+  description = "Management API key"
+}

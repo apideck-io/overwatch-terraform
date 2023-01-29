@@ -7,6 +7,11 @@ resource "aws_db_parameter_group" "postgresql13" {
   name        = "${var.deployment_name}-aurora-db-postgres13-parameter-group"
   family      = "aurora-postgresql13"
   description = "${var.deployment_name}-aurora-db-postgres13-parameter-group"
+
+  parameter {
+    name  = "log_statement"
+    value = "ddl"
+  }
 }
 
 resource "aws_rds_cluster_parameter_group" "postgresql13" {
