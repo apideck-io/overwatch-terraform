@@ -1,12 +1,12 @@
 data "aws_rds_engine_version" "postgresql" {
   engine  = "aurora-postgresql"
-  version = "13.6"
+  version = "14.6"
 }
 
-resource "aws_db_parameter_group" "postgresql13" {
-  name        = "${var.deployment_name}-aurora-db-postgres13-parameter-group"
-  family      = "aurora-postgresql13"
-  description = "${var.deployment_name}-aurora-db-postgres13-parameter-group"
+resource "aws_db_parameter_group" "postgresql14" {
+  name        = "${var.deployment_name}-aurora-db-postgres14-parameter-group"
+  family      = "aurora-postgresql14"
+  description = "${var.deployment_name}-aurora-db-postgres14-parameter-group"
 
   parameter {
     name  = "log_statement"
@@ -14,10 +14,10 @@ resource "aws_db_parameter_group" "postgresql13" {
   }
 }
 
-resource "aws_rds_cluster_parameter_group" "postgresql13" {
-  name        = "${var.deployment_name}-aurora-postgres13-cluster-parameter-group"
-  family      = "aurora-postgresql13"
-  description = "${var.deployment_name}-aurora-postgres13-cluster-parameter-group"
+resource "aws_rds_cluster_parameter_group" "postgresql14" {
+  name        = "${var.deployment_name}-aurora-postgres14-cluster-parameter-group"
+  family      = "aurora-postgresql14"
+  description = "${var.deployment_name}-aurora-postgres14-cluster-parameter-group"
 }
 
 module "rds_cluster" {
@@ -40,8 +40,8 @@ module "rds_cluster" {
   apply_immediately   = true
   skip_final_snapshot = true
 
-  db_parameter_group_name         = aws_db_parameter_group.postgresql13.id
-  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.postgresql13.id
+  db_parameter_group_name         = aws_db_parameter_group.postgresql14.id
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.postgresql14.id
 
   serverlessv2_scaling_configuration = {
     min_capacity = 0.5

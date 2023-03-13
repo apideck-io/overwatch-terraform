@@ -13,9 +13,11 @@ locals {
 variable "aws_profile" {
   type        = string
   description = "AWS Profile to use for deployment"
+  default = "apideck-production"
 }
 
 variable "client_id" {
   type        = string
   description = "Google SSO Client ID"
+  default = "495594039277-u8690qm5okuca05c4upfehie6mqrtcvv.apps.googleusercontent.com"
 }

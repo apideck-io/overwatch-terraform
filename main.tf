@@ -19,7 +19,7 @@ module "retool" {
   private_subnet_ids = [for subnet in module.platform_network.main_private_subnets : subnet.id]
   public_subnet_ids  = [for subnet in module.platform_network.main_public_subnets : subnet.id]
   # ssh_key_pair = "<your-key-pair>"
-  ecs_retool_image = "tryretool/backend:2.103.7"
+  ecs_retool_image = "tryretool/backend:2.110.4"
   domain_name      = local.domain_name
 
   retool_license_key    = data.aws_ssm_parameter.retool_license_key.arn
