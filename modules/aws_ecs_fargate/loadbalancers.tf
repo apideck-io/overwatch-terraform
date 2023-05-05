@@ -44,10 +44,10 @@ resource "aws_lb_target_group" "this" {
   protocol             = "HTTP"
 
   health_check {
-    interval            = 10
+    interval            = 20
     path                = "/api/checkHealth"
     protocol            = "HTTP"
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 3
     unhealthy_threshold = 2
     port                = 3000
