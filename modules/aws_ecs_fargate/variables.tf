@@ -30,6 +30,11 @@ variable "vpc_id" {
   description = "Select a VPC that allows instances access to the Internet."
 }
 
+variable "vpc_cidr_block" {
+  type        = string
+  description = "Select the CIDR block that will be allowed to access the RDS."
+}
+
 variable "private_subnet_ids" {
   type        = list(string)
   description = "Select at two subnets in your selected VPC."

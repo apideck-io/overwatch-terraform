@@ -16,6 +16,7 @@ module "retool" {
   deployment_name    = "overwatch"
   aws_region         = "eu-central-1"
   vpc_id             = module.platform_network.vpc_id
+  vpc_cidr_block     = module.platform_network.vpc_cidr_block
   private_subnet_ids = [for subnet in module.platform_network.main_private_subnets : subnet.id]
   public_subnet_ids  = [for subnet in module.platform_network.main_public_subnets : subnet.id]
   # ssh_key_pair = "<your-key-pair>"
