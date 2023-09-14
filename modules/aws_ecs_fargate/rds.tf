@@ -56,4 +56,7 @@ module "rds_cluster" {
   create_random_password = false
   master_username        = aws_secretsmanager_secret_version.rds_username.secret_string
   master_password        = aws_secretsmanager_secret_version.rds_password.secret_string
+
+  backup_retention_period = 35
+  preferred_backup_window = "03:00-05:00"
 }
