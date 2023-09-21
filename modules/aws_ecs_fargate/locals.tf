@@ -20,11 +20,7 @@ locals {
       },
       {
         name  = "POSTGRES_SSL_ENABLED"
-        value = "false"
-      },
-      {
-        name  = "POSTGRES_SSL_REJECT_UNAUTHORIZED"
-        value = "false"
+        value = "true"
       },
       {
         name  = "POSTGRES_PORT"

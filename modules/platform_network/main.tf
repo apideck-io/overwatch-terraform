@@ -1,6 +1,6 @@
 data "aws_vpc" "main" {
   tags = {
-    Name = "platform-vpc-${var.stage}"
+    Name = "apideck--vpc--${var.stage}"
   }
 }
 
@@ -9,7 +9,7 @@ data "aws_subnet" "main_private" {
 
   vpc_id = data.aws_vpc.main.id
   tags = {
-    Name       = "platform-private-subnet-${count.index}-${var.stage}"
+    Name       = "apideck--vpc--${var.stage}-private-subnet-${count.index}"
     SubnetType = "private"
   }
 }
@@ -19,7 +19,7 @@ data "aws_subnet" "main_public" {
 
   vpc_id = data.aws_vpc.main.id
   tags = {
-    Name       = "platform-public-subnet-${count.index}-${var.stage}"
+    Name       = "apideck--vpc--${var.stage}-public-subnet-${count.index}"
     SubnetType = "public"
   }
 }

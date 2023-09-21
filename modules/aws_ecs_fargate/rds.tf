@@ -30,6 +30,9 @@ module "rds_cluster" {
   engine_version    = data.aws_rds_engine_version.postgresql.version
   storage_encrypted = true
 
+  db_subnet_group_name   = "apideck-production"
+  create_db_subnet_group = false
+
   vpc_id                 = var.vpc_id
   subnets                = var.private_subnet_ids
   create_security_group  = false
