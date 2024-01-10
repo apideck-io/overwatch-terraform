@@ -10,3 +10,12 @@ Disclaimer: Please use these modules only if you're comfortable configuring Terr
 # Usage
 
 Navigate to your desired cloud provider + deployment module for specific configuration options.
+
+# How to deploy
+1. Make sure you're on the `production` workspace.
+2. Run `tf apply`
+
+# How to upgrade
+1. Check the latest version of Retool on https://docs.retool.com/changelog/tags/self-hosted
+2. Change the version number in the `main.tf` file of the ecs_retool_image on line 23.
+3. Deploy
