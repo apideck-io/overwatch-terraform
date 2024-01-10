@@ -17,5 +17,5 @@ Navigate to your desired cloud provider + deployment module for specific configu
 
 # How to upgrade
 1. Check the latest version of Retool on https://docs.retool.com/changelog/tags/self-hosted
-2. Change the version number in the `main.tf` file of the ecs_retool_image on line 23.
+2. Change the version number in the `main.tf` file of the `ecs_retool_image` on line 23.
 3. Deploy
