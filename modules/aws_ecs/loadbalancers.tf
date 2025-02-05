@@ -2,6 +2,8 @@ resource "aws_lb" "this" {
   name         = "${var.deployment_name}-alb"
   idle_timeout = var.alb_idle_timeout
 
+  drop_invalid_header_fields = true
+
   security_groups = [aws_security_group.alb.id]
   subnets         = var.subnet_ids
 }
