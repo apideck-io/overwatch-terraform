@@ -25,7 +25,7 @@ services:
       retries: 20
 
   api:
-    image: tryretool/backend:3.24.6
+    image: tryretool/backend:${RETOOL_VERSION}
     platform: linux/amd64
     env_file:
       - ../.env
@@ -39,7 +39,7 @@ services:
     command: ["./docker_scripts/start_api.sh"]
 
   jobs-runner:
-    image: tryretool/backend:3.24.6
+    image: tryretool/backend:${RETOOL_VERSION}
     platform: linux/amd64
     env_file:
       - ../.env
