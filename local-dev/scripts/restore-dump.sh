@@ -126,7 +126,7 @@ if [ "$SKIP_AURORA_FILTER" = "false" ]; then
     pg_restore --list "$DUMP" > "$TOC_RAW"
   fi
   raw_count=$(wc -l < "$TOC_RAW")
-  grep -vE "(SCHEMA - aws_|GRANT .* rdsadmin|GRANT .* rds_|EXTENSION - aws_|EXTENSION - pg_buffercache)" \
+  grep -vE "(SCHEMA - aws_|SCHEMA - .* rdsadmin|GRANT .* rdsadmin|GRANT .* rds_|EXTENSION - aws_|EXTENSION - pg_buffercache)" \
     "$TOC_RAW" > "$TOC_FILT"
   filt_count=$(wc -l < "$TOC_FILT")
   delta=$(( raw_count - filt_count ))

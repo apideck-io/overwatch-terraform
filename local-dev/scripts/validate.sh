@@ -128,9 +128,17 @@ check_health jobs-runner
 [ "$HAS_CODE_EXECUTOR" = "yes" ] && check_health code-executor
 log "OK: healthchecks not unhealthy."
 
-# --- Hard check 3: /api/checkHealth returns 200 ---
-if ! curl -fsS --max-time 10 http://localhost:3000/api/checkHealth >/dev/null; then
-  fail "http://localhost:3000/api/checkHealth did not return 2xx"
+# --- Hard check 3: /api/checkHealth returns 200 (retry: HTTP listener may lag migrations) ---
+health_ok="no"
+for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+  if curl -fsS --max-time 5 http://localhost:3000/api/checkHealth >/dev/null 2>&1; then
+    health_ok="yes"
+    break
+  fi
+  sleep 5
+done
+if [ "$health_ok" != "yes" ]; then
+  fail "http://localhost:3000/api/checkHealth did not return 2xx after 60s"
 fi
 log "OK: /api/checkHealth -> 200."
 
@@ -141,13 +149,20 @@ if [ -f "$ENV_FILE" ]; then
   export POSTGRES_USER POSTGRES_DB
 fi
 
-# --- Hard check 4: knex_migrations row count >= previous hop's value ---
-KNEX_COUNT="$(psql_exec 'SELECT count(*) FROM knex_migrations' || true)"
-KNEX_COUNT="${KNEX_COUNT//[!0-9]/}"
-if [ -z "$KNEX_COUNT" ]; then
-  fail "could not read knex_migrations count from postgres"
+# --- Hard check 4: migration row count >= previous hop's value ---
+# Retool uses SequelizeMeta in older versions; newer versions may add knex_migrations.
+# Sum both when present so the count is monotonic across the upgrade walk.
+SEQ_COUNT="$(psql_exec 'SELECT count(*) FROM "SequelizeMeta"' 2>/dev/null || echo 0)"
+SEQ_COUNT="${SEQ_COUNT//[!0-9]/}"
+KNX_COUNT="$(psql_exec "SELECT count(*) FROM knex_migrations" 2>/dev/null || echo 0)"
+KNX_COUNT="${KNX_COUNT//[!0-9]/}"
+SEQ_COUNT="${SEQ_COUNT:-0}"
+KNX_COUNT="${KNX_COUNT:-0}"
+KNEX_COUNT=$(( SEQ_COUNT + KNX_COUNT ))
+if [ "$KNEX_COUNT" -eq 0 ]; then
+  fail "could not read migration counts (SequelizeMeta + knex_migrations both 0 or missing)"
 fi
-log "knex_migrations count: $KNEX_COUNT"
+log "migration counts: SequelizeMeta=$SEQ_COUNT knex_migrations=$KNX_COUNT total=$KNEX_COUNT"
 
 prev_count_for() {
   # $1 = column name in header. Returns last numeric value seen, or empty.

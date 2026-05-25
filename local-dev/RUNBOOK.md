@@ -24,6 +24,20 @@ stepped image upgrades to `3.334.15-stable`, log a row per hop to
 - **Free Retool license** from <https://my.retool.com>. Free keys do not
   expire and are not bound to the prod licence.
 - `jq`, `curl`, `openssl`, `python3` on host PATH.
+- **Host port 55432 free** for the postgres service. Compose publishes
+  the container's 5432 to `127.0.0.1:55432` (see
+  `compose/compose.3-24.yml:20`) to avoid colliding with other local
+  Postgres instances (e.g. `platform-api-db`). Container-internal port
+  stays 5432, so `api` + `jobs-runner` connect via `postgres:5432` on
+  the compose network -- `POSTGRES_PORT=5432` in `.env` is correct.
+
+  Laptop-side access:
+  ```sh
+  psql -h 127.0.0.1 -p 55432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+  ```
+
+  If 55432 is also taken, edit `compose/compose.3-24.yml:20` to another
+  free host port; do not change the right-hand `5432`.
 
 ---
 
@@ -37,7 +51,7 @@ encrypted value and produces a dry-run with invalid signal.
 
 ```sh
 # 1. Find a running retool task.
-aws ecs list-tasks --cluster overwatch-ecs --service-name overwatch-retool
+aws ecs list-tasks --profile apideck-production --cluster overwatch-ecs --service-name overwatch-retool
 
 # 2. Open a shell inside the task's retool container.
 aws ecs execute-command \

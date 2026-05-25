@@ -135,8 +135,8 @@ log "waiting for migration completion (timeout: ${timeout_seconds}s + 60s buffer
 
 migration_seconds=""
 while true; do
-  if "${DC[@]}" logs jobs-runner 2>&1 \
-       | grep -qE "migration.*(complete|done|finished)"; then
+  if "${DC[@]}" logs api jobs-runner 2>&1 \
+       | grep -qE "migration.*(complete|done|finished)|[Dd]atabase migrations are up to date"; then
     migration_seconds=$(( $(date +%s) - ts_migr_start ))
     log "migrations settled in ${migration_seconds}s."
     break
