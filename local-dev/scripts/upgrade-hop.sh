@@ -58,22 +58,31 @@ env_get() {
 }
 
 # --- Auto-select compose file by tag ---
-# Convert "3.196.33-stable" -> major.minor "3.196" for comparison.
-tag_minor() {
-  printf '%s' "$1" | awk -F. '{print $1"."$2}'
-}
-ge_minor() {
-  # 0 if "$1" >= "$2" (as floats), 1 otherwise.
-  awk -v a="$1" -v b="$2" 'BEGIN{ exit !(a+0 >= b+0) }'
+# Compare Retool version strings as (major, minor) integer pairs.
+# Naive float comparison breaks because "3.24" < "3.196" as versions
+# but "3.24" > "3.196" as decimals.
+ge_version() {
+  # Returns 0 if version $1 >= version $2 (component-wise).
+  awk -v a="$1" -v b="$2" '
+    function comps(v, arr,   parts) {
+      split(v, parts, /[.-]/)
+      arr[1] = parts[1] + 0
+      arr[2] = parts[2] + 0
+    }
+    BEGIN {
+      comps(a, A); comps(b, B)
+      if (A[1] != B[1]) exit !(A[1] > B[1])
+      exit !(A[2] >= B[2])
+    }
+  '
 }
 
 if [ "${#COMPOSE_FILES[@]}" -eq 0 ]; then
-  minor="$(tag_minor "$TO_TAG")"
   # 3-24 base for every hop; 3-196 overlay layered on top once code-executor
   # becomes required (3.251+). Compose merges environment maps additively,
   # which is what we want for the api service's CODE_EXECUTOR_INGRESS_DOMAIN.
   COMPOSE_FILES=("$LOCAL_DEV_DIR/compose/compose.3-24.yml")
-  if ge_minor "$minor" 3.196; then
+  if ge_version "$TO_TAG" "3.196.0"; then
     COMPOSE_FILES+=("$LOCAL_DEV_DIR/compose/compose.3-196.yml")
   fi
 fi
