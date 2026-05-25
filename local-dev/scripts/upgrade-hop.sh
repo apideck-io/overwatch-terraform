@@ -19,7 +19,7 @@ LOGS_DIR="$LOCAL_DEV_DIR/logs"
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-local-dev}"
 
 TO_TAG=""
-COMPOSE_FILE=""
+COMPOSE_FILES=()
 SKIP_SNAPSHOT="false"
 
 usage() {
@@ -27,7 +27,7 @@ usage() {
 Usage: $(basename "$0") --to <tag> [--compose <file>] [--skip-snapshot]
 
   --to <tag>         tryretool/backend tag to upgrade to (e.g. 3.33.39-stable)
-  --compose <file>   compose file to use (default: auto-select by tag)
+  --compose <file>   compose file to use (repeatable; overrides auto-select)
   --skip-snapshot    do not snapshot data/ after a successful validate
 EOF
   exit 2
@@ -36,7 +36,7 @@ EOF
 while [ $# -gt 0 ]; do
   case "$1" in
     --to)             TO_TAG="$2"; shift 2 ;;
-    --compose)        COMPOSE_FILE="$2"; shift 2 ;;
+    --compose)        COMPOSE_FILES+=("$2"); shift 2 ;;
     --skip-snapshot)  SKIP_SNAPSHOT="true"; shift ;;
     -h|--help)        usage ;;
     *)                echo "[upgrade-hop] unknown arg: $1" >&2; usage ;;
@@ -67,18 +67,20 @@ ge_minor() {
   awk -v a="$1" -v b="$2" 'BEGIN{ exit !(a+0 >= b+0) }'
 }
 
-if [ -z "$COMPOSE_FILE" ]; then
+if [ "${#COMPOSE_FILES[@]}" -eq 0 ]; then
   minor="$(tag_minor "$TO_TAG")"
+  # 3-24 base for every hop; 3-196 overlay layered on top once code-executor
+  # becomes required (3.251+). Compose merges environment maps additively,
+  # which is what we want for the api service's CODE_EXECUTOR_INGRESS_DOMAIN.
+  COMPOSE_FILES=("$LOCAL_DEV_DIR/compose/compose.3-24.yml")
   if ge_minor "$minor" 3.196; then
-    COMPOSE_FILE="$LOCAL_DEV_DIR/compose/compose.3-196.yml"
-  else
-    COMPOSE_FILE="$LOCAL_DEV_DIR/compose/compose.3-24.yml"
+    COMPOSE_FILES+=("$LOCAL_DEV_DIR/compose/compose.3-196.yml")
   fi
 fi
-if [ ! -f "$COMPOSE_FILE" ]; then
-  fail "compose file not found: $COMPOSE_FILE  (Phase 6 ships compose.3-196.yml)"
-fi
-log "using compose file: $(basename "$COMPOSE_FILE")"
+for f in "${COMPOSE_FILES[@]}"; do
+  [ -f "$f" ] || fail "compose file not found: $f"
+done
+log "using compose files: $(IFS=,; printf '%s' "$(basename -a "${COMPOSE_FILES[@]}" | paste -sd, -)")"
 
 # --- Idempotency check ---
 current_version="$(env_get RETOOL_VERSION)"
@@ -103,7 +105,11 @@ PY
 
 mkdir -p "$LOGS_DIR" "$SNAP_DIR"
 
-DC=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -p "$PROJECT_NAME")
+DC=(docker compose --env-file "$ENV_FILE")
+for f in "${COMPOSE_FILES[@]}"; do
+  DC+=(-f "$f")
+done
+DC+=(-p "$PROJECT_NAME")
 
 # --- Pull new image, bring up ---
 log "pulling images..."

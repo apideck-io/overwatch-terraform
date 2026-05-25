@@ -1,0 +1,32 @@
+# Overlay applied on top of compose.3-24.yml for hops >= 3.196.
+# Brings up tryretool/code-executor-service alongside api + jobs-runner
+# (required by the backend starting at 3.251). Extends api's env with the
+# CODE_EXECUTOR_INGRESS_DOMAIN + WORKFLOW_BACKEND_HOST routing.
+#
+# Use both files together:
+#   docker compose --env-file .env \
+#     -f compose/compose.3-24.yml \
+#     -f compose/compose.3-196.yml \
+#     up -d
+services:
+  api:
+    environment:
+      CODE_EXECUTOR_INGRESS_DOMAIN: http://code-executor:3004
+      WORKFLOW_BACKEND_HOST: http://api:3000
+
+  code-executor:
+    image: tryretool/code-executor-service:${RETOOL_VERSION}
+    platform: linux/amd64
+    env_file:
+      - ../.env
+    environment:
+      # macOS-host emulation rules out the nsjail-privileged path.
+      # Both flag names appear in Retool's own materials -- set both for
+      # safety (research §6 notes they don't fully reconcile).
+      IGNORE_CODE_EXECUTOR_STARTUP_CHECK: "true"
+      DISABLE_IPTABLES_SECURITY_CONFIGURATION: "true"
+      CONTAINER_UNPRIVILEGED_MODE: "true"
+      ALLOW_UNSAFE_CODE_EXECUTION: "true"
+    depends_on:
+      api:
+        condition: service_started
