@@ -21,7 +21,8 @@ resource "aws_rds_cluster_parameter_group" "postgresql14" {
 }
 
 module "rds_cluster" {
-  source = "terraform-aws-modules/rds-aurora/aws"
+  source  = "terraform-aws-modules/rds-aurora/aws"
+  version = "~> 7.0"
 
   name              = var.deployment_name
   database_name     = "hammerhead_production"
