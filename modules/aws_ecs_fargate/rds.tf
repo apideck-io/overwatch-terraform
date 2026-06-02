@@ -25,13 +25,13 @@ module "rds_cluster" {
   version = "~> 7.0"
 
   name              = var.deployment_name
-  database_name     = "hammerhead_production"
+  database_name     = "hammerhead_${var.stage}"
   engine            = data.aws_rds_engine_version.postgresql.engine
   engine_mode       = "provisioned"
   engine_version    = data.aws_rds_engine_version.postgresql.version
   storage_encrypted = true
 
-  db_subnet_group_name   = "apideck-production"
+  db_subnet_group_name   = "apideck-${var.stage}"
   create_db_subnet_group = false
 
   vpc_id                 = var.vpc_id
