@@ -28,11 +28,14 @@ terraform {
     bucket         = "apideck-terraform-s3"
     key            = "terraform/overwatch"
     region         = "eu-central-1"
-    session_name   = "Terraform"
     encrypt        = true
+
     profile        = "apideck-staging"
-    external_id    = "terraform-state"
-    role_arn       = "arn:aws:iam::708245472192:role/tf-state-role"
+    assume_role = {
+      role_arn     = "arn:aws:iam::708245472192:role/tf-state-role"
+      session_name = "Terraform"
+      external_id  = "terraform-state"
+    }
   }
   required_version = ">= 0.13"
 }

@@ -13,7 +13,7 @@ locals {
 variable "aws_profile" {
   type        = string
   description = "AWS Profile to use for deployment"
-  default = "apideck-production"
+  default     = ""
 }
 
 variable "client_id" {

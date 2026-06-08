@@ -12,7 +12,7 @@ locals {
       },
       {
         name  = "POSTGRES_DB"
-        value = "hammerhead_production"
+        value = "hammerhead_${var.stage}"
       },
       {
         name  = "POSTGRES_HOST"
