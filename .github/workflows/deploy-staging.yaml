@@ -1,0 +1,72 @@
+name: deploy-staging
+
+on:
+  workflow_dispatch: {}  # Manually trigger this from GitHub
+
+env:
+  TF_VERSION: '1.15.5'
+  AWS_CONFIG_FILE: /home/runner/.aws/config
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform_apply:
+    name: Deploy staging infrastructure
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup Staging AWS Credentials
+        uses: apideck-io/configure-aws-credentials@580c74ae8188a849b3eaa08f91f6d6fbbf6e8cf8 # v1-node16
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_STAGING }}:role/Github-CICD
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          aws-profile: apideck-staging
+          role-session-name: OverwatchTerraformGithubAction
+
+      - name: Lint - check for unpinned registry modules
+        run: |
+          python3 << 'EOF'
+          import re, sys
+          from pathlib import Path
+
+          unpinned = []
+          for tf_file in Path('.').rglob('*.tf'):
+              content = tf_file.read_text()
+              for block in re.finditer(r'module\s+"[^"]+"\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', content, re.DOTALL):
+                  body = block.group(1)
+                  if re.search(r'source\s*=\s*"terraform-aws-modules/', body):
+                      if not re.search(r'^\s*version\s*=', body, re.MULTILINE):
+                          unpinned.append(str(tf_file))
+
+          if unpinned:
+              print("ERROR: unpinned terraform-aws-modules registry sources found:")
+              for f in sorted(unpinned):
+                  print(f"  {f}")
+              sys.exit(1)
+          print("OK: all terraform-aws-modules sources have version pins")
+          EOF
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          AWS_PROFILE: apideck-staging
+
+      - name: Terraform Workspace
+        run: terraform workspace select staging || terraform workspace new staging
+        env:
+          AWS_PROFILE: apideck-staging
+
+      - name: Terraform Plan
+        run: terraform plan
+        env:
+          AWS_PROFILE: apideck-staging

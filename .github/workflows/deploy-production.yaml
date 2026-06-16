@@ -1,0 +1,92 @@
+name: deploy-production
+
+on:
+  workflow_dispatch: {}  # Manually trigger this from GitHub
+  push:
+    branches:
+      - main
+
+env:
+  TF_VERSION: '1.15.5'
+  AWS_CONFIG_FILE: /home/runner/.aws/config
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write  # required for manual approval step
+
+jobs:
+  terraform_apply:
+    name: Deploy production infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup Production AWS Credentials
+        uses: apideck-io/configure-aws-credentials@580c74ae8188a849b3eaa08f91f6d6fbbf6e8cf8 # v1-node16
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_PRODUCTION }}:role/Github-CICD
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          aws-profile: apideck-production
+          role-session-name: OverwatchTerraformGithubAction
+
+      - name: Lint - check for unpinned registry modules
+        run: |
+          python3 << 'EOF'
+          import re, sys
+          from pathlib import Path
+
+          unpinned = []
+          for tf_file in Path('.').rglob('*.tf'):
+              content = tf_file.read_text()
+              for block in re.finditer(r'module\s+"[^"]+"\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', content, re.DOTALL):
+                  body = block.group(1)
+                  if re.search(r'source\s*=\s*"terraform-aws-modules/', body):
+                      if not re.search(r'^\s*version\s*=', body, re.MULTILINE):
+                          unpinned.append(str(tf_file))
+
+          if unpinned:
+              print("ERROR: unpinned terraform-aws-modules registry sources found:")
+              for f in sorted(unpinned):
+                  print(f"  {f}")
+              sys.exit(1)
+          print("OK: all terraform-aws-modules sources have version pins")
+          EOF
+
+      - name: Terraform Init
+        # Override the backend profile from terraform.tf (apideck-staging) to use production credentials
+        run: terraform init -backend-config="profile=apideck-production"
+        env:
+          AWS_PROFILE: apideck-production
+
+      - name: Terraform Workspace
+        run: terraform workspace select production || terraform workspace new production
+        env:
+          AWS_PROFILE: apideck-production
+
+      - name: Terraform Plan
+        run: terraform plan
+        env:
+          AWS_PROFILE: apideck-production
+
+      - name: Manual Approval
+        uses: trstringer/manual-approval@9f5e5d6bc511762e17f849775a3c56bdea6b4493 # v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ github.triggering_actor }}
+          minimum-approvals: 1
+          issue-title: "Plan approval required before applying production Overwatch Infrastructure"
+          issue-body: |
+            Please approve or deny the Terraform Plan for Production Overwatch Infrastructure
+
+      - name: Terraform Plan
+        run: terraform plan
+        env:
+          AWS_PROFILE: apideck-production
