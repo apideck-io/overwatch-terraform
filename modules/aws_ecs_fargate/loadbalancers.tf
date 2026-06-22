@@ -2,15 +2,28 @@ resource "aws_lb" "this" {
   name         = "${var.deployment_name}-alb"
   idle_timeout = var.alb_idle_timeout
 
+  drop_invalid_header_fields = true
+
   security_groups = [aws_security_group.alb.id]
   subnets         = var.public_subnet_ids
+
+  access_logs {
+    bucket  = "apideck--access-logs--${var.stage}"
+    prefix  = "loadbalancer/overwatch--${var.stage}"
+    enabled = true
+  }
+
+  tags = {
+    monitor_site24x7 = "true"
+    support          = var.stage == "production" ? "gold" : "standard"
+  }
 }
 
 resource "aws_lb_listener" "this" {
   load_balancer_arn = aws_lb.this.arn
   port              = 443
   protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = module.apideck_acm_certificate.acm_certificate_arn
 
   default_action {
