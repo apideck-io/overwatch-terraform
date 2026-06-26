@@ -1,6 +1,6 @@
 data "aws_rds_engine_version" "postgresql" {
   engine  = "aurora-postgresql"
-  version = "14.6"
+  version = "14.20"
 }
 
 resource "aws_db_parameter_group" "postgresql14" {
@@ -25,6 +25,11 @@ module "rds_cluster" {
   version = "~> 7.0"
 
   name              = var.deployment_name
+  tags = {
+    "cpm backup"     = "apideck_d_7 apideck_w_4 apideck_m_3"
+    monitor_site24x7 = "true"
+    support          = var.stage == "production" ? "gold" : "standard"
+  }
   database_name     = "hammerhead_${var.stage}"
   engine            = data.aws_rds_engine_version.postgresql.engine
   engine_mode       = "provisioned"

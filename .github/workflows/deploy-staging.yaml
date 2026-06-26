@@ -70,3 +70,8 @@ jobs:
         run: terraform plan
         env:
           AWS_PROFILE: apideck-staging
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env:
+          AWS_PROFILE: apideck-staging

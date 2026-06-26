@@ -15,6 +15,11 @@ resource "aws_ecs_cluster" "this" {
     name  = "containerInsights"
     value = var.ecs_insights_enabled
   }
+
+  tags = {
+    monitor_site24x7 = "true"
+    support          = var.stage == "production" ? "gold" : "standard"
+  }
 }
 
 resource "aws_ecs_cluster_capacity_providers" "this" {
