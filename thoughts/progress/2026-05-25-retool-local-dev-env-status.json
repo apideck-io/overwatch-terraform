@@ -1,0 +1,16 @@
+{
+  "plan": "2026-05-25-retool-local-dev-env.md",
+  "current_phase": 9,
+  "total_phases": 8,
+  "completed": true,
+  "phases": [
+    {"id": 1, "name": "Scaffold local-dev/ workspace", "status": "complete"},
+    {"id": 2, "name": "Validation script (RED)", "status": "complete"},
+    {"id": 3, "name": "Period-correct compose for 3.24 boot (GREEN)", "status": "complete"},
+    {"id": 4, "name": "Postgres dump restore tooling", "status": "complete"},
+    {"id": 5, "name": "Single-hop upgrade runner", "status": "complete"},
+    {"id": 6, "name": "Add code-executor at 3.196 hop", "status": "complete"},
+    {"id": 7, "name": "Stepped walk orchestrator", "status": "complete"},
+    {"id": 8, "name": "Runbook + rollback procedure", "status": "complete"}
+  ]
+}
