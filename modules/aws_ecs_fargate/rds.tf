@@ -26,7 +26,7 @@ module "rds_cluster" {
 
   name              = var.deployment_name
   tags = {
-    "cpm backup"     = "apideck_d_7 apideck_w_4 apideck_m_3"
+    "cpm backup"     = var.stage == "production" ? "apideck_d_7 apideck_w_4 apideck_m_3" : "apideck_stg_d_7"
     monitor_site24x7 = "true"
     support          = var.stage == "production" ? "gold" : "standard"
   }
