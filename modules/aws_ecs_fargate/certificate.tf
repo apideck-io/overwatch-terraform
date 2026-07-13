@@ -13,6 +13,9 @@ module "apideck_acm_certificate" {
   wait_for_validation = true
 }
 
+# Re-added: this us-east-1 wildcard cert is still in use (CloudFront requires
+# us-east-1 certs), so deleting it fails with ResourceInUseException and hangs
+# every apply. Keep it managed until the consumer is decommissioned.
 module "apideck_acm_certificate_east" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> 3.0"

@@ -18,6 +18,12 @@ variable "aws_profile" {
 
 variable "client_id" {
   type        = string
-  description = "Google SSO Client ID"
-  default = "495594039277-u8690qm5okuca05c4upfehie6mqrtcvv.apps.googleusercontent.com"
+  description = "Google SSO Client ID for the production workspace"
+  default     = "495594039277-u8690qm5okuca05c4upfehie6mqrtcvv.apps.googleusercontent.com"
+}
+
+variable "staging_client_id" {
+  type        = string
+  description = "Google SSO Client ID for the staging workspace (separate OAuth app)"
+  default     = "742137882758-kr09odn9r44clo368nugd6e4054l7dpk.apps.googleusercontent.com"
 }

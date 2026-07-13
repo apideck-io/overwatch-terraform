@@ -1,0 +1,8 @@
+# Apple Silicon overlay -- forces linux/amd64 emulation.
+# No-op on Intel macOS (Docker still honours platform: linux/amd64).
+# Apply with: -f compose/compose.3-24.yml -f compose/compose.override.yml
+services:
+  api:
+    platform: linux/amd64
+  jobs-runner:
+    platform: linux/amd64

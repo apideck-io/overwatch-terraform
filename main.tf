@@ -57,7 +57,7 @@ module "retool" {
     value = "true"
     }, {
     name  = "CUSTOM_OAUTH2_SSO_CLIENT_ID"
-    value = var.client_id
+    value = terraform.workspace == "production" ? var.client_id : var.staging_client_id
     }, {
     name  = "CUSTOM_OAUTH2_SSO_SCOPES"
     value = "openid email profile https://www.googleapis.com/auth/userinfo.profile"

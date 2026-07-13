@@ -1,0 +1,51 @@
+# Period-correct compose for the 3.24 -> 3.196 hop range.
+# Modelled on tryretool/retool-onpremise@1dfa911 (March 2024) but reduced
+# to prod's 2-service topology: api + jobs-runner + postgres.
+# At Phase 5, image: literals get replaced with ${RETOOL_VERSION}.
+# At Phase 6, a separate compose.3-196.yml adds the code-executor service.
+
+services:
+  postgres:
+    image: postgres:14.6
+    # Matches prod Aurora parameter group log_statement=ddl
+    # (modules/aws_ecs_fargate/rds.tf:11-15).
+    command: ["postgres", "-c", "log_statement=ddl"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ../data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: tryretool/backend:${RETOOL_VERSION}
+    platform: linux/amd64
+    env_file:
+      - ../.env
+    environment:
+      SERVICE_TYPE: MAIN_BACKEND,DB_CONNECTOR
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["./docker_scripts/start_api.sh"]
+
+  jobs-runner:
+    image: tryretool/backend:${RETOOL_VERSION}
+    platform: linux/amd64
+    env_file:
+      - ../.env
+    environment:
+      SERVICE_TYPE: JOBS_RUNNER
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["./docker_scripts/start_api.sh"]

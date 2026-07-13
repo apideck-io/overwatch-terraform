@@ -8,3 +8,11 @@ hashicorp/
 *.tfstate.backup
 
 .DS_Store
+
+# Local Retool dev stack
+local-dev/.env
+local-dev/dumps/
+local-dev/data/
+local-dev/data-snapshots/
+local-dev/logs/
+local-dev/hop-report.tsv
