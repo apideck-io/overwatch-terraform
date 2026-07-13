@@ -87,6 +87,6 @@ jobs:
             Please approve or deny the Terraform Plan for Production Overwatch Infrastructure
 
       - name: Terraform Apply
-        run: terraform plan
+        run: terraform apply -auto-approve
         env:
           AWS_PROFILE: apideck-production
