@@ -68,7 +68,10 @@ resource "aws_ecs_service" "jobs_runner" {
 }
 
 resource "aws_ecs_task_definition" "retool_jobs_runner" {
-  family        = "retool"
+  family = "retool"
+  # Both task defs share family "retool"; ECS rejects concurrent revision
+  # creates on one family. Serialize so image bumps don't race.
+  depends_on    = [aws_ecs_task_definition.retool]
   task_role_arn = aws_iam_role.task_role.arn
 
 
