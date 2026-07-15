@@ -147,12 +147,16 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
   )
 }
 resource "aws_ecs_task_definition" "retool" {
-  family                   = "retool"
-  task_role_arn            = aws_iam_role.task_role.arn
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  network_mode             = "awsvpc"
-  cpu                      = "2048"
-  memory                   = "4096"
+  family             = "retool"
+  task_role_arn      = aws_iam_role.task_role.arn
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  network_mode       = "awsvpc"
+  cpu                = "2048"
+  # Main backend (MAIN_BACKEND,DB_CONNECTOR) runs the migration stack on boot.
+  # Retool 3.114+ base memory is ~20% higher; the old container hard limit of
+  # 2048 MB OOM-killed (exit 137) mid-migration on this hop. Give the task 8 GB
+  # and the container 6 GB (see ecs_task_memory) for the migration spike.
+  memory                   = "8192"
   requires_compatibilities = ["FARGATE"]
   container_definitions = jsonencode(
     [
