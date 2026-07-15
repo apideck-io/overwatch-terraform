@@ -42,6 +42,19 @@ resource "aws_ecs_service" "retool" {
   deployment_minimum_healthy_percent = var.minimum_healthy_percent
   launch_type                        = "FARGATE"
 
+  # A new task runs the Retool migration stack on first boot. On big upgrade
+  # hops that takes minutes; without a grace period the ALB health check
+  # (~60s) kills the task mid-migration and the deploy never rolls forward.
+  # Match DATABASE_MIGRATIONS_TIMEOUT_SECONDS so the migration can finish.
+  health_check_grace_period_seconds = 1800
+
+  # Surface a genuinely failed deploy instead of churning silently on the old
+  # task def. Rolls back to last-known-good on failure.
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
   network_configuration {
     security_groups = [aws_security_group.ec2.id]
     subnets         = var.private_subnet_ids
