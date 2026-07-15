@@ -75,9 +75,11 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
   task_role_arn = aws_iam_role.task_role.arn
 
 
-  network_mode             = "awsvpc"
-  cpu                      = "512"
-  memory                   = "1024"
+  network_mode = "awsvpc"
+  cpu          = "512"
+  # Retool 3.114+ base memory is ~20% higher; 1024 was too tight for the
+  # jobs-runner. 512 CPU / 2048 MB is a valid Fargate combo.
+  memory                   = "2048"
   requires_compatibilities = ["FARGATE"]
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
@@ -89,7 +91,7 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
         essential = true
         image     = var.ecs_retool_image
         cpu       = 512
-        memory    = 1024
+        memory    = 2048
         command = [
           "./docker_scripts/start_api.sh"
         ]
