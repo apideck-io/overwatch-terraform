@@ -81,7 +81,7 @@ module "retool" {
     value = "45"
     }, {
     name  = "DATABASE_MIGRATIONS_TIMEOUT_SECONDS"
-    value = "900"
+    value = "1800"
     }
   ]
 
