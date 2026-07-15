@@ -42,6 +42,22 @@ resource "aws_ecs_service" "retool" {
   deployment_minimum_healthy_percent = var.minimum_healthy_percent
   launch_type                        = "FARGATE"
 
+  # A new task runs the Retool migration stack on first boot. On big upgrade
+  # hops that takes minutes; without a grace period the ALB health check
+  # (~60s) kills the task mid-migration and the deploy never rolls forward.
+  # Match DATABASE_MIGRATIONS_TIMEOUT_SECONDS so the migration can finish.
+  health_check_grace_period_seconds = 1800
+
+  # Surface a genuinely failed deploy instead of churning silently on the old
+  # task def. rollback is intentionally false: Retool migrations apply on boot
+  # and are not reversible in-place, so auto-reverting to the previous image
+  # would run old code against a migrated Aurora schema — an outage. Recovery
+  # is operator-driven via the runbook's snapshot-restore path.
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = false
+  }
+
   network_configuration {
     security_groups = [aws_security_group.ec2.id]
     subnets         = var.private_subnet_ids
@@ -75,9 +91,11 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
   task_role_arn = aws_iam_role.task_role.arn
 
 
-  network_mode             = "awsvpc"
-  cpu                      = "512"
-  memory                   = "1024"
+  network_mode = "awsvpc"
+  cpu          = "512"
+  # Retool 3.114+ base memory is ~20% higher; 1024 was too tight for the
+  # jobs-runner. 512 CPU / 2048 MB is a valid Fargate combo.
+  memory                   = "2048"
   requires_compatibilities = ["FARGATE"]
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
@@ -89,7 +107,7 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
         essential = true
         image     = var.ecs_retool_image
         cpu       = 512
-        memory    = 1024
+        memory    = 2048
         command = [
           "./docker_scripts/start_api.sh"
         ]
@@ -132,12 +150,16 @@ resource "aws_ecs_task_definition" "retool_jobs_runner" {
   )
 }
 resource "aws_ecs_task_definition" "retool" {
-  family                   = "retool"
-  task_role_arn            = aws_iam_role.task_role.arn
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  network_mode             = "awsvpc"
-  cpu                      = "2048"
-  memory                   = "4096"
+  family             = "retool"
+  task_role_arn      = aws_iam_role.task_role.arn
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  network_mode       = "awsvpc"
+  cpu                = "2048"
+  # Main backend (MAIN_BACKEND,DB_CONNECTOR) runs the migration stack on boot.
+  # Retool 3.114+ base memory is ~20% higher; the old container hard limit of
+  # 2048 MB OOM-killed (exit 137) mid-migration on this hop. Give the task 8 GB
+  # and the container 6 GB (see ecs_task_memory) for the migration spike.
+  memory                   = "8192"
   requires_compatibilities = ["FARGATE"]
   container_definitions = jsonencode(
     [

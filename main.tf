@@ -20,7 +20,7 @@ module "retool" {
   private_subnet_ids = [for subnet in module.platform_network.main_private_subnets : subnet.id]
   public_subnet_ids  = [for subnet in module.platform_network.main_public_subnets : subnet.id]
   # ssh_key_pair = "<your-key-pair>"
-  ecs_retool_image = "tryretool/backend:3.33.9-stable"
+  ecs_retool_image = "tryretool/backend:3.114.28-stable"
   domain_name      = local.domain_name
 
   retool_license_key    = data.aws_ssm_parameter.retool_license_key.arn
@@ -81,7 +81,7 @@ module "retool" {
     value = "45"
     }, {
     name  = "DATABASE_MIGRATIONS_TIMEOUT_SECONDS"
-    value = "900"
+    value = "1800"
     }
   ]
 

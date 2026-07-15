@@ -93,8 +93,8 @@ variable "ecs_task_cpu" {
 
 variable "ecs_task_memory" {
   type        = number
-  default     = 2048
-  description = "Amount of memory provisioned for each task. Defaults to 2048."
+  default     = 6144
+  description = "Container hard memory limit (MB) for the main Retool backend. Must be <= the task-level memory. Defaults to 6144 (Retool 3.114+ migration needs >2048)."
 }
 
 variable "force_deployment" {
