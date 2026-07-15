@@ -49,10 +49,13 @@ resource "aws_ecs_service" "retool" {
   health_check_grace_period_seconds = 1800
 
   # Surface a genuinely failed deploy instead of churning silently on the old
-  # task def. Rolls back to last-known-good on failure.
+  # task def. rollback is intentionally false: Retool migrations apply on boot
+  # and are not reversible in-place, so auto-reverting to the previous image
+  # would run old code against a migrated Aurora schema — an outage. Recovery
+  # is operator-driven via the runbook's snapshot-restore path.
   deployment_circuit_breaker {
     enable   = true
-    rollback = true
+    rollback = false
   }
 
   network_configuration {
