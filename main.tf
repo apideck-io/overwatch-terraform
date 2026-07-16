@@ -82,6 +82,12 @@ module "retool" {
     }, {
     name  = "DATABASE_MIGRATIONS_TIMEOUT_SECONDS"
     value = "1800"
+    }, {
+    name  = "CODE_EXECUTOR_INGRESS_DOMAIN"
+    value = "http://code-executor.retoolsvc:3004"
+    }, {
+    name  = "WORKFLOW_BACKEND_HOST"
+    value = "http://localhost:3000"
     }
   ]
 

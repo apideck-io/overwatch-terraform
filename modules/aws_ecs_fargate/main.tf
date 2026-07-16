@@ -222,3 +222,92 @@ resource "aws_ecs_task_definition" "retool" {
     ]
   )
 }
+
+# code-executor: a different image on its own task-def family (no serialization
+# needed — the retool/jobs-runner depends_on race only affects the shared
+# "retool" family). Mirrors the jobs_runner service shape plus a service-registry
+# so the backend resolves it at code-executor.retoolsvc:3004. Idle in this
+# deployment (browser-side JS transformers only), so minimally sized.
+resource "aws_ecs_task_definition" "code_executor" {
+  family                   = "overwatch-code-executor"
+  task_role_arn            = aws_iam_role.task_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  network_mode             = "awsvpc"
+  cpu                      = var.code_executor_cpu
+  memory                   = var.code_executor_memory
+  requires_compatibilities = ["FARGATE"]
+
+  container_definitions = jsonencode(
+    [
+      {
+        name      = "code-executor"
+        essential = true
+        image     = var.code_executor_image
+        cpu       = var.code_executor_cpu
+        memory    = var.code_executor_memory
+
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = aws_cloudwatch_log_group.this.id
+            awslogs-region        = var.aws_region
+            awslogs-stream-prefix = "SERVICE_CODE_EXECUTOR"
+          }
+        }
+
+        portMappings = [
+          {
+            containerPort = 3004
+            hostPort      = 3004
+            protocol      = "tcp"
+          }
+        ]
+
+        # Fargate can't grant the kernel capabilities nsjail needs, so run the
+        # unprivileged sandbox. ALLOW_UNSAFE_CODE_EXECUTION is intentionally NOT
+        # set — Overwatch routes no Python/Workflows/custom-auth to the executor.
+        environment = concat(
+          local.environment_variables,
+          [
+            {
+              name  = "CONTAINER_UNPRIVILEGED_MODE"
+              value = "true"
+            },
+            {
+              name  = "DISABLE_IPTABLES_SECURITY_CONFIGURATION"
+              value = "true"
+            },
+            {
+              name  = "IGNORE_CODE_EXECUTOR_STARTUP_CHECK"
+              value = "true"
+            }
+          ]
+        )
+
+        secrets = [
+          {
+            "name" : "LICENSE_KEY",
+            "valueFrom" : var.retool_license_key
+          }
+        ]
+      }
+    ]
+  )
+}
+
+resource "aws_ecs_service" "code_executor" {
+  name            = "${var.deployment_name}-code-executor-service"
+  cluster         = aws_ecs_cluster.this.id
+  desired_count   = 1
+  task_definition = aws_ecs_task_definition.code_executor.arn
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    security_groups = [aws_security_group.code_executor.id]
+    subnets         = var.private_subnet_ids
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.code_executor.arn
+  }
+}
