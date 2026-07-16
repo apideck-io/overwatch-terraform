@@ -278,3 +278,20 @@ variable "management_api_key" {
   type        = string
   description = "Management API key"
 }
+
+variable "code_executor_image" {
+  type        = string
+  description = "Container image for the Retool code-executor service. No default — the root module pins the version-matched tag."
+}
+
+variable "code_executor_cpu" {
+  type        = number
+  default     = 512
+  description = "CPU units for the code-executor task. Defaults to 512 — the service is idle in this deployment (browser-side JS transformers only)."
+}
+
+variable "code_executor_memory" {
+  type        = number
+  default     = 1024
+  description = "Memory (MB) for the code-executor task. Defaults to 1024 — minimal; the service is idle in this deployment."
+}
