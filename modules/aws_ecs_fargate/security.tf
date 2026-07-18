@@ -56,7 +56,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_security_group" "code_executor" {
   name        = "${var.deployment_name}-code-executor-security-group"
-  description = "Retool code-executor security group — reachable only by the backend"
+  description = "Retool code-executor security group - reachable only by the backend"
   vpc_id      = var.vpc_id
 
   ingress {
