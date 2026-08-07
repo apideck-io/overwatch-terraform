@@ -95,6 +95,17 @@ module "retool" {
     ipv6_cidr_blocks = ["::/0"]
 
   }]
+
+  ec2_ingress_rules = [{
+
+    description      = "VPC HTTP inbound"
+    from_port        = "3000"
+    to_port          = "3000"
+    protocol         = "tcp"
+    cidr_blocks      = [module.platform_network.vpc_cidr_block]
+    ipv6_cidr_blocks = []
+
+  }]
 }
 
 module "platform_network" {
