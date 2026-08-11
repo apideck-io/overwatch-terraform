@@ -89,6 +89,15 @@ module "retool" {
     }, {
     name  = "WORKFLOW_BACKEND_HOST"
     value = "http://localhost:3000"
+    }, {
+    # Decouples backend startup from executor availability. On 2026-07-18 the
+    # backend had CODE_EXECUTOR_INGRESS_DOMAIN but not this, and every 3.196.33
+    # task exited ~100s in while the executor was unreachable — 4 attempts,
+    # circuit breaker, rollout dead. The executor is optional at 3.196, so the
+    # backend must not hard-depend on it. Revisit at hop 5 (3.251), where it
+    # stops being optional.
+    name  = "IGNORE_CODE_EXECUTOR_STARTUP_CHECK"
+    value = "true"
     }
   ]
 
