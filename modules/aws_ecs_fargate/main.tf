@@ -278,9 +278,12 @@ resource "aws_ecs_task_definition" "code_executor" {
         #
         # Fargate can't grant the kernel capabilities nsjail needs, so run the
         # unprivileged sandbox. ALLOW_UNSAFE_CODE_EXECUTION is intentionally NOT
-        # set — Overwatch routes no Python/Workflows/custom-auth to the executor.
-        # (The image reads CONTAINER_UNPRIVILEGED_MODE and reports it back under
-        # the ALLOW_UNSAFE_CODE_EXECUTION name; they are one switch.)
+        # set — it is the same switch under a second name, not an additional one:
+        # the 2026-07-18 task def set CONTAINER_UNPRIVILEGED_MODE alone and this
+        # image (3.196.33-stable) logged back "unprivileged mode
+        # (ALLOW_UNSAFE_CODE_EXECUTION=true)". Setting both is redundant.
+        # Resolves open question §6 in
+        # thoughts/research/2026-05-25-retool-local-dev-env.md.
         environment = [
           {
             name  = "NODE_ENV"

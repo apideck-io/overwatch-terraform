@@ -301,7 +301,15 @@ A staged dry-run does not need code-executor for the early hops; it only becomes
 3. **`uuid-ossp` extension on local Postgres.** Not enabled by the official compose's `postgres` container by default. Either ship a dump that already has it, or run `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";` on first boot.
 4. **License key for upgrade-spanning testing.** Free key from `my.retool.com` works for all hops. Whether the production `LICENSE_KEY` (in SSM) is also valid locally is undocumented; reusing prod-issued keys across environments may violate license terms — verify with Retool.
 5. **`DATABASE_MIGRATIONS_TIMEOUT_SECONDS` value for stepped upgrades.** Retool docs say "set higher when upgrading major versions" but name no number. `900` (current) may or may not suffice when a single hop encompasses many months of migrations.
-6. **Unprivileged code-executor flag name.** `ALLOW_UNSAFE_CODE_EXECUTION` (in compose.yaml comments) vs `CONTAINER_UNPRIVILEGED_MODE` (in security docs) — Retool docs do not reconcile these. Choose one when configuring local; behaviour difference (if any) is undocumented.
+6. ~~**Unprivileged code-executor flag name.**~~ **RESOLVED 2026-08-11** — they are
+   one switch. Staging task def `overwatch-code-executor:1`
+   (`tryretool/code-executor-service:3.196.33-stable`) set
+   `CONTAINER_UNPRIVILEGED_MODE=true` and did *not* set
+   `ALLOW_UNSAFE_CODE_EXECUTION`; the container logged
+   `"specified to run in unprivileged mode (ALLOW_UNSAFE_CODE_EXECUTION=true)"`.
+   The image reads the former and reports it under the latter's name. Setting
+   both is redundant. What actually matters is the paired requirement in that
+   same message: the container must run as uid/gid 1001, or it exits at startup.
 7. **macOS Apple Silicon emulation overhead.** Running `linux/amd64` images under emulation on `darwin/arm64` is slow; whether migration timeouts that are fine on Fargate trip locally is an empirical question.
 8. **SSO callback URL for local Google OAuth2 client.** The existing client ID (`495594039277-…apideck.com`) has `https://overwatch.${domain}/oauth2sso/callback` registered, not localhost. Testing SSO locally requires either a second OAuth2 client with localhost callback or skipping SSO locally (`DISABLE_USER_PASS_LOGIN=false` + `TRIGGER_OAUTH_2_SSO_LOGIN_AUTOMATICALLY=false`).
 
