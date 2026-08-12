@@ -20,8 +20,9 @@ module "retool" {
   private_subnet_ids = [for subnet in module.platform_network.main_private_subnets : subnet.id]
   public_subnet_ids  = [for subnet in module.platform_network.main_public_subnets : subnet.id]
   # ssh_key_pair = "<your-key-pair>"
-  ecs_retool_image = "tryretool/backend:3.148.13-stable"
-  domain_name      = local.domain_name
+  ecs_retool_image    = "tryretool/backend:3.196.33-stable"
+  code_executor_image = "tryretool/code-executor-service:3.196.33-stable"
+  domain_name         = local.domain_name
 
   retool_license_key    = data.aws_ssm_parameter.retool_license_key.arn
   log_retention_in_days = 7
@@ -82,6 +83,21 @@ module "retool" {
     }, {
     name  = "DATABASE_MIGRATIONS_TIMEOUT_SECONDS"
     value = "1800"
+    }, {
+    name  = "CODE_EXECUTOR_INGRESS_DOMAIN"
+    value = "http://code-executor.retoolsvc:3004"
+    }, {
+    name  = "WORKFLOW_BACKEND_HOST"
+    value = "http://localhost:3000"
+    }, {
+    # Decouples backend startup from executor availability. On 2026-07-18 the
+    # backend had CODE_EXECUTOR_INGRESS_DOMAIN but not this, and every 3.196.33
+    # task exited ~100s in while the executor was unreachable — 4 attempts,
+    # circuit breaker, rollout dead. The executor is optional at 3.196, so the
+    # backend must not hard-depend on it. Revisit at hop 5 (3.251), where it
+    # stops being optional.
+    name  = "IGNORE_CODE_EXECUTOR_STARTUP_CHECK"
+    value = "true"
     }
   ]
 

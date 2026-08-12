@@ -222,3 +222,123 @@ resource "aws_ecs_task_definition" "retool" {
     ]
   )
 }
+
+# code-executor: a different image on its own task-def family (no serialization
+# needed — the retool/jobs-runner depends_on race only affects the shared
+# "retool" family). Mirrors the jobs_runner service shape plus a service-registry
+# so the backend resolves it at code-executor.retoolsvc:3004. Idle in this
+# deployment (browser-side JS transformers only), so minimally sized.
+resource "aws_ecs_task_definition" "code_executor" {
+  family                   = "overwatch-code-executor"
+  task_role_arn            = aws_iam_role.task_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  network_mode             = "awsvpc"
+  cpu                      = var.code_executor_cpu
+  memory                   = var.code_executor_memory
+  requires_compatibilities = ["FARGATE"]
+
+  container_definitions = jsonencode(
+    [
+      {
+        name      = "code-executor"
+        essential = true
+        image     = var.code_executor_image
+        cpu       = var.code_executor_cpu
+        memory    = var.code_executor_memory
+
+        # Required by CONTAINER_UNPRIVILEGED_MODE. Without it the 2026-07-18
+        # staging attempt crash-looped for 20 days on:
+        #   "unprivileged mode ... but the user running container is not the
+        #    expected user, retool_user (uid 1001) in retool_user_group (gid 1001)"
+        # uid:gid rather than the name so it can't depend on image-side lookup.
+        user = "1001:1001"
+
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = aws_cloudwatch_log_group.this.id
+            awslogs-region        = var.aws_region
+            awslogs-stream-prefix = "SERVICE_CODE_EXECUTOR"
+          }
+        }
+
+        portMappings = [
+          {
+            containerPort = 3004
+            hostPort      = 3004
+            protocol      = "tcp"
+          }
+        ]
+
+        # Explicit list, NOT local.environment_variables — that bucket is backend
+        # config and would hand the executor the Postgres credentials, JWT_SECRET
+        # and ENCRYPTION_KEY, plus a CODE_EXECUTOR_INGRESS_DOMAIN pointing at
+        # itself and a WORKFLOW_BACKEND_HOST pointing at its own empty port 3000.
+        # The executor is a stateless JS sandbox; it needs none of it.
+        #
+        # Fargate can't grant the kernel capabilities nsjail needs, so run the
+        # unprivileged sandbox. ALLOW_UNSAFE_CODE_EXECUTION is intentionally NOT
+        # set — it is the same switch under a second name, not an additional one:
+        # the 2026-07-18 task def set CONTAINER_UNPRIVILEGED_MODE alone and this
+        # image (3.196.33-stable) logged back "unprivileged mode
+        # (ALLOW_UNSAFE_CODE_EXECUTION=true)". Setting both is redundant.
+        # Resolves open question §6 in
+        # thoughts/research/2026-05-25-retool-local-dev-env.md.
+        environment = [
+          {
+            name  = "NODE_ENV"
+            value = var.node_env
+          },
+          {
+            name  = "CONTAINER_UNPRIVILEGED_MODE"
+            value = "true"
+          },
+          {
+            name  = "DISABLE_IPTABLES_SECURITY_CONFIGURATION"
+            value = "true"
+          },
+          {
+            name  = "IGNORE_CODE_EXECUTOR_STARTUP_CHECK"
+            value = "true"
+          }
+        ]
+
+        secrets = [
+          {
+            "name" : "LICENSE_KEY",
+            "valueFrom" : var.retool_license_key
+          }
+        ]
+      }
+    ]
+  )
+}
+
+resource "aws_ecs_service" "code_executor" {
+  name            = "${var.deployment_name}-code-executor-service"
+  cluster         = aws_ecs_cluster.this.id
+  desired_count   = 1
+  task_definition = aws_ecs_task_definition.code_executor.arn
+  launch_type     = "FARGATE"
+
+  # Same convention as the retool service (hop 2): surface a failed rollout
+  # instead of reverting it. Absent on the 2026-07-18 attempt, which is why a
+  # crash-looping executor sat unnoticed for 20 days.
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = false
+  }
+
+  # Cheap here (no migrations, ~1 min to steady state) and it makes the deploy
+  # workflow fail loudly rather than go green in 39s on a broken rollout.
+  wait_for_steady_state = true
+
+  network_configuration {
+    security_groups = [aws_security_group.code_executor.id]
+    subnets         = var.private_subnet_ids
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.code_executor.arn
+  }
+}
